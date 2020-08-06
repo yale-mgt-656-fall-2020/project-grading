@@ -1,0 +1,337 @@
+name: EventBrite Clone project tests
+scenarios:
+  - when: I visit the homepage at {{url}}
+    key: homepage
+    tests:
+      - it: is "up"
+        key: up
+        desc: >
+          I get a "200 OK" HTTP response. This basically just means
+          that your website is up.
+
+      - it: has a title
+        key: title
+        desc: >
+          I test for a non-zero length string in the <title></title> tags of the
+          page.
+        details: >
+          Your title is "{{title}}"
+
+      - it: has valid HTML
+        key: valid
+        desc: >
+          I run your homepage through https://validator.w3.org/nu to check it
+          for errors.
+
+      - it: uses a popular CSS framework
+        key: cssFramework
+        desc: >
+          I'm looking for "bootstrap", "bulma", "material", "foundation", or "semantic" in
+          the href attribute of a <link> element in the <head> of your document.
+          You should be using one of those CSS frameworks to make your pages
+          look rad. Google it.
+
+      - it: has links to all your events
+        key: eventLinks
+        desc: >
+          That is, your homepage should list all the events people can attend.
+        details: >
+          I check for {{events.length}} <a> elements with href attributes containing
+          {% for event in events %}
+            {% if loop.last %}and{% endif %}'/events/{{event.id}}'{% if loop.last %}.{% else %},{% endif %}
+          {% endfor %}
+          Of course, you might have other events.
+          The CSS selector for these is something like 'a[href*="/events/0"]'.
+
+      - it: each event has a time associated with it
+        key: eventTimes
+        desc: >
+          I'm testing for the existence of three or more <time> tags on the page.
+
+      - it: has a link to your about page in the footer
+        key: aboutPageLink
+        desc: >
+          I'm testing for an <a> element with "/about" in its href attribute
+          inside of a <footer> element on your page.
+
+      - it: has a link to your home page in the footer
+        key: homePageLink
+        desc: >
+          I'm testing for an <a> element with "/" alone in its href attribute
+          inside of a <footer> element on your page.
+
+      - it: has a logo
+        key: logo
+        desc: >
+          I'm testing for an <img> tag with id="logo" inside a <header> element
+          on your page.
+
+      - it: has a link to create a new event
+        key: createEventLink
+        desc: >
+          I'm testing for an <a> tag with an href containing "/events/new"
+  - when: I visit the about page at {{url}}/about
+    key: about
+    tests:
+      - it: exists
+        key: exists
+        desc: >
+          I get a "200 OK" HTTP response. 
+
+      - it: contains your team nickname
+        key: nickname
+        desc: >
+          The nickname is the team nickname you find in the dashboard
+          on the class website.
+        details: >
+          You indicated that your team nickname is "{{nickname}}" and 
+          I expect to see that text somewhere on your about page.
+  - when: I visit an event detail page at /events/{{event.id}} (randomly chosen)
+    key: eventDetail
+    tests:
+      - it: exists
+        key: exists
+        desc: >
+          I get a "200 OK" HTTP response. 
+
+      - it: has a link to your about page in the footer
+        key: aboutPageLink
+        desc: >
+          I'm testing for an <a> element with "/about" in its href attribute
+          inside of a <footer> element on your page.
+
+      - it: has a link to your home page in the footer
+        key: homePageLink
+        desc: >
+          I'm testing for an <a> element with "/" alone in its href attribute
+          inside of a <footer> element on your page.
+
+      - it: has an h1 element with the event title
+        key: title
+        desc: >
+          I'm testing for an <a> element with "/" alone in its href attribute
+          inside of a <footer> element on your page.
+
+      - it: has no errors shown on the page
+        key: noError
+        desc: >
+          When I first load the page, there should be no errors,
+          clearly.
+        details: >
+          I'm checking for elements with one of the following
+          classes- {{errorClasses}}.
+
+      - it: has a link to donate to the event
+        key: donateLink
+        desc: >
+          This is how users would donate in order to support
+          the event.
+        details: >
+          I'm checking for an <a> with href containing {{link}}
+
+      - it: shows the people who have RSVP'd for the event
+        key: attending
+        desc: >
+          The page should show these email addresses of those
+          attending. 
+        details: >
+          You should be showing at least these people
+          {% set comma = joiner() %}
+          {% for person in event.attending -%}
+            {{comma()}} {{person}}
+          {%- endfor %}.
+
+      - it: has a form for RSVP'ing to the event
+        key: rsvpForm
+        desc: >
+          I test for a form with action="POST" on the page.
+
+      - it: has an RSVP form has an input for the user's email address
+        key: rsvpFormEmail
+        desc: >
+          I test for a an input with type="email" and name="email"
+          inside a form element.
+
+      - it: has a submit button
+        key: rsvpFormSubmit
+        desc: >
+          I test for a an input with type="submit" inside a form element.
+          You can also use a button with type="submit".
+
+      - it: should allow {{email}} to RSVP
+        key: validRSVP
+        desc: >
+          I fill out the email input and submit the form. After the
+          form is submitted I check the page for the presence of
+          the email address and confirmation code.
+        details: >
+          The email address
+          and confirmation code for which I checked this time are
+          {{email}} and {{confirmationCode}}, which is the first seven characters
+          of the sha256 hash of {{email}}.
+
+      - it: should not allow {{email}} to RSVP
+        key: invalidRSVP
+        desc: >
+          I fill out the email input and submit the form. After the
+          form is submitted I check the page for the presence of the
+          email address among those attending. It should not be 
+          there. Note that I am turning off client-side form validation
+          so that you'll have to handle validation on the server!
+          I also check for an element with class="errors". This should
+          be there and it should show the user a message like 
+          "only Yalies!", though, the particular message doesn't matter.
+
+  - when: I visit your API at /api/events
+    key: api
+    tests:
+      - it: exists
+        key: exists
+        desc: >
+          I get a HTTP 200 OK response.
+
+      - it: is valid JSON format
+        key: json
+        desc: >
+          I try to parse your response assuming it is valid JSON.
+          Errors make the test fail.
+
+      - it: has all the default events
+        key: defaultEvents
+        desc: >
+          Your JSON should be formatted such that either 1) it has a key
+          "events" that stores
+          an array of
+          events; or, 2) it just displays an array of events. E.g. it should
+          looks something
+          like one of the formats here
+          https://bit.ly/2Xr7mjs.
+        details: >
+          I'm checking for events with ids
+          {% for event in events -%}
+            {% if loop.last %}and {% endif %}{{event.id}}{% if loop.last %}.{% else %},{% endif %}
+          {% endfor -%}.
+
+
+  - when: I visit your API for a specific event at /api/events/{{event.id}}
+    key: apiEventDetail
+    tests:
+      - it: exists
+        key: exists
+        desc: >
+          I get a HTTP 200 OK response.
+
+      - it: is valid JSON format
+        key: json
+        desc: >
+          I try to parse your response assuming it is valid JSON.
+          Errors make the test fail.
+
+      - it: has the right event information
+        key: info
+        desc: >
+          I should find that it has the right title information.
+        details: >
+          The
+          title should be "{{event.title}}".
+
+  - when: I visit page for creating a new event at /events/new
+    key: eventCreation
+    tests:
+      - it: exists
+        key: exists
+        desc: >
+          I get a HTTP 200 OK response.
+
+      - it: has a form for submitting a new event
+        key: form
+        desc: >
+          I test for a form element on the page
+
+      - it: does not have an errors shown on the page by default
+        key: noError
+        desc: >
+          When a user creates an event with invalid data, an error
+          message should be shown to them. There should be no error
+          message on the page otherwise. 
+        details: >
+          I'm checking for elements with one of the following
+          classes- {{errorClasses}}.
+
+      - it: |
+          the form has inputs for title, location, image URL, date and a
+          submit button
+        key: formFields
+        wrap: false
+        desc: >
+          These should all be on the page.
+        details: >
+          I test for the following CSS selectors
+
+          {% for selector in selectors -%}
+            * {{selector|safe}}
+          {% endfor -%}.
+
+      - it: does not allow creating an event with bad title
+        key: badTitle
+        desc: > 
+          Titles must be more than 5 and fewer than 50 unicode characters. If the 
+          title is invalid, you should return the user to the form (at the same
+          URL) and show them their error.
+        details: >
+          I'm checking for elements with one
+          of the following
+          classes- {{errorClasses}}. The invalid title I submitted was "{{event.title}}".
+
+      - it: does not allow creating an event with bad location
+        key: badLocation
+        desc: > 
+          Location must be more than 5 and fewer than 50 unicode characters. If the 
+          location is invalid, you should return the user to the form (at the same
+          URL) and show them their error.
+        details: >
+          I'm checking for elements with one
+          of the following
+          classes- {{errorClasses}}. The invalid location I submitted was
+          "{{event.location}}".
+
+      - it: does not allow creating an event with bad image
+        key: badImage
+        desc: > 
+          Images should be a valid URL and be one of the following file types-
+          ".png", ".jpg", ".jpeg", ".gif", or ".gifv".
+          If the 
+          image is invalid, you should return the user to the form (at the same
+          URL) and show them their error.
+        details: >
+          I'm checking for elements with one
+          of the following
+          classes- {{errorClasses}}. The invalid location I submitted was
+          "{{event.location}}".
+
+      - it: does not allow creating an event with bad date
+        key: badDate
+        desc: > 
+          Dates must be be in the format "2006-01-02T15:04" and also be in the
+          future. If the 
+          date is invalid, you should return the user to the form (at the same
+          URL) and show them their error.
+        details: >
+          The bad I'm checking for elements with one
+          of the following
+          classes- {{errorClasses}}. The invalid date I submitted was
+          "{{event.date}}".
+
+      - it: allows creating a valid event
+        key: validEvent
+        desc: > 
+          If I submit valid event information, you should create the new
+          event and then redirect me to the event detail page at "/events/ID"
+          where "ID" is the id of the new event. There should be no errors
+          on the page.
+        details: >
+          I'm checking for elements with one
+          of the following
+          classes- {{errorClasses}}. The valid event I submitted was 
+          "{{event.title}}" at "{{event.location}}" on "{{event.date}}"
+          with image "{{event.image}}".
