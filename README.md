@@ -17,24 +17,6 @@ as well---you can't test localhost from grading.656.mba.)
 
 You can also run this code locally on your computer
 if you have Docker and bash installed on your system.
-If you do, you can run the testing code with something
-like
-
-```
-./admin.sh run 656 foo-bar 'http://host.docker.internal:8080'
-```
-
-That assumes you're running your project (app) code on
-localhost 8080.
-
-Note that you will need to run 
-
-```
-./admin.sh build
-```
-
-before running this code for the first time (and every time 
-the grading code changes).
 
 ## Caveats
 
