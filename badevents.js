@@ -176,10 +176,11 @@ function getBadDate() {
     default:
         console.debug('no flaw');
     }
+    console.debug(`Bad date is ${JSON.stringify(e)}`);
     const p = (x) => x.padStart(2, '0');
     return {
         flaw,
-        date: `${e.year}-${p(e.month)}-${p(e.month)}T${p(e.hour)}:${p(e.minute)}`,
+        date: `${e.year}-${p(e.month)}-${p(e.day)}T${p(e.hour)}:${p(e.minute)}`,
     };
 }
 function capitalize(s) {

@@ -306,8 +306,8 @@ scenarios:
         details: >
           I'm checking for elements with one
           of the following
-          classes- {{errorClasses}}. The invalid location I submitted was
-          "{{event.location}}".
+          classes- {{errorClasses}}. The invalid image I submitted was
+          "{{event.image}}".
 
       - it: does not allow creating an event with bad date
         key: badDate
