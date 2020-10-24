@@ -6,6 +6,7 @@ const htmlValidator = require('html-validator');
 const nodeUrl = require('url');
 const chance = require('chance').Chance();
 const crypto = require('crypto');
+const fetch = require('node-fetch');
 const config = require('./config.js');
 const events = require('./events.js');
 const badevents = require('./badevents.js');
@@ -428,6 +429,59 @@ function getTestSuiteResult(testSuite, whenKey, itKey) {
     return null;
 }
 
+function yelukerestInfo(teamNickname) {
+    const hasJWT = typeof process.env.YELUKEREST_JWT === 'string';
+    const hasFQDN = typeof process.env.YELUKEREST_FQDN === 'string';
+    const error = !(hasJWT && hasFQDN);
+    return {
+        error,
+        jwt: process.env.YELUKEREST_JWT,
+        fqdn: process.env.YELUKEREST_FQDN,
+    };
+}
+
+async function getTeamMemberNicknames(teamNickname) {
+    const {error, jwt, fqdn} = yelukerestInfo();
+    console.log('Got env vars for yelukerest');
+    let teamMemberNicknames = [];
+    if (!error) {
+        console.log('About to get nicknames for team members');
+        const result = await getTeamMemberNicknamesWithCredentials(fqdn, jwt, teamNickname);
+        console.log('Got nicknames for team members. Result = ');
+        console.log(JSON.stringify(result));
+        teamMemberNicknames = result.nicknames;
+    }
+    return {
+        error,
+        nicknames: teamMemberNicknames,
+    }
+}
+
+// 
+async function getTeamMemberNicknamesWithCredentials(fqdn, jwt, teamNickname) {
+    const theURL = `https://${fqdn}/rest/users?team_nickname=eq.${teamNickname}&select=nickname`;
+    const options = {
+        headers: {
+            'Authorization': `Bearer ${jwt}`,
+        },
+    };
+    let memberNicknames = [];
+    let hadError = null;
+    try {
+        const response = await fetch(theURL, options);
+        const json = await response.json();
+        memberNicknames = json.map((u) => u.nickname);
+        hadError = false;
+    } catch {
+        console.trace()
+        hadError = true;
+    }
+    return {
+        error: hadError,
+        nicknames: memberNicknames,
+    }
+}
+
 (async () => {
     if (argv._.length !== 3) {
         return usage('Invalid number of inputs!');
@@ -589,14 +643,40 @@ function getTestSuiteResult(testSuite, whenKey, itKey) {
     testSuite = recordTestStatus(aboutPageExists, testSuite, 'about', 'exists');
 
     if (aboutPageExists) {
+        const findOnPage = (n) => page.evaluate((x) => window.find(x), n);
         let foundNickname = false;
         try {
             // eslint-disable-next-line no-undef
-            foundNickname = await page.evaluate((x) => window.find(x), nickname);
+            foundNickname = await findOnPage(nickname);
         } catch (e) {
             foundNickname = false;
         }
         testSuite = recordTestStatus(foundNickname, testSuite, 'about', 'nickname');
+
+        let hadTeamInfoError = false;
+        let teamInfo = {};
+        try {
+            teamInfo = await getTeamMemberNicknames(nickname);
+            console.debug(JSON.stringify(teamInfo)); 
+            hadTeamInfoError = teamInfo.error;
+        } catch (e) {
+            console.log("Error", e.name);
+            console.log("Error", e.message);
+            console.log("Error", e.stack);
+            console.trace()
+            hadTeamInfoError = true;
+        }
+        if (!hadTeamInfoError) {
+            // Search for all nicknames and see if every one is found/true
+            const nicknameSearches = teamInfo.nicknames.map(findOnPage);
+            const nicknameSearchResults = await Promise.all(nicknameSearches);
+            console.log(nicknameSearchResults);
+            const nicknamesWereFound = nicknameSearchResults.every((x) => x===true)
+            const context = {nicknames: teamInfo.nicknames};
+            testSuite = recordTestStatus(nicknamesWereFound, testSuite, 'about', 'memberNicknames', context);
+        } else {
+            testSuite = recordTestStatus(false, testSuite, 'about', 'memberNicknames');
+        }
     }
 
     // ###################################

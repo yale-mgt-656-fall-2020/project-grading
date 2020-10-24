@@ -86,6 +86,19 @@ scenarios:
         details: >
           You indicated that your team nickname is "{{nickname}}" and 
           I expect to see that text somewhere on your about page.
+      - it: contains the nicknames of each of your team members
+        key: memberNicknames
+        desc: >
+          You can find your nickname in the dashboard of the class
+          website. Each of your team members will have a different
+          nickname and each should be listed on your about page somewhere.
+        details: >
+          {% if nicknames %}
+            I believe your team members nicknames are as follows:
+            {{ nicknames | join(", ") }}.
+          {% else %}
+            I was not able to look up your team member nicknames. 😔
+          {% endif %}
   - when: I visit an event detail page at /events/{{event.id}} (randomly chosen)
     key: eventDetail
     tests:
